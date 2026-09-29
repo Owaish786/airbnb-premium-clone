@@ -1,0 +1,39 @@
+server {
+    listen 80;
+    server_name _; # Replace with your EC2 public IP or domain name
+
+    # Frontend - Vite build output
+    root /home/ubuntu/airbnb-premium-clone/client/dist;
+    index index.html;
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    # Backend API reverse proxy
+    location ~ ^/(user|places|bookings|upload|upload-by-link) {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+
+        # Upload file size limit (for photo uploads)
+        client_max_body_size 20M;
+    }
+
+    # SPA routing - serve index.html for any other route
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Static assets caching
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+}
